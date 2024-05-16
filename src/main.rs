@@ -4,7 +4,7 @@ mod file;
 
 use std::{
     env,
-    io::{stdin, stdout, Write}
+    io::{stdin, stdout, Write}, path::PathBuf
 };
 
 use crate::errors::{
@@ -21,15 +21,15 @@ fn main() {
     let param: Option<&String> = args.get(2);
 
     let out: Result<String> = match action {
-        "encrypt" => jenc_encrpyt(&param),
-        "enc" => jenc_encrpyt(&param),
-        "e" => jenc_encrpyt(&param),
+        "encrypt" => jenc_encrypt(&param),
+        "enc" => jenc_encrypt(&param),
+        "e" => jenc_encrypt(&param),
 
         "decrypt" => jenc_decrypt(&param),
         "dec" => jenc_decrypt(&param),
         "d" => jenc_decrypt(&param),
 
-        _ => Ok(help()),
+        _ => attempt_autodetect_action(action),
     };
 
     if out.is_err() {
@@ -39,7 +39,27 @@ fn main() {
     }
 }
 
-fn jenc_encrpyt(param: &Option<&String>) -> Result<String> {
+fn attempt_autodetect_action(param: &str) -> Result<String> {
+    let path: PathBuf = PathBuf::from(param);
+
+    if path.is_file() {
+        if param.ends_with(".jenc") {
+            println!("detected decrypt jenc...");
+            return jenc_decrypt(&Some(&param.to_string()))
+        } else {
+            println!("detected encrypt file...");
+            return jenc_encrypt(&Some(&param.to_string()))
+        }
+    }
+    else if path.is_dir() {
+        println!("detected encrypt folder...");
+        return jenc_encrypt(&Some(&param.to_string()))
+    }
+
+    Ok(help())
+}
+
+fn jenc_encrypt(param: &Option<&String>) -> Result<String> {
     param_check(param)?;
     let file: &str = param.unwrap();
 
