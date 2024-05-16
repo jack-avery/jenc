@@ -1,0 +1,20 @@
+[package]
+name = "jenc"
+version = "0.1.1"
+authors = ["Jack Avery <jack.avery.business@gmail.com>"]
+edition = "2021"
+description = "file encryption tool"
+repository = "https://github.com/jack-avery/jenc"
+keywords = ["aes", "aes256", "security", "encryption"]
+readme = "README.md"
+license = "MIT"
+
+[dependencies]
+aes = "0.8.3"
+aes-gcm-siv = { version = "0.11.1", features = ["std"] }
+bcrypt = "0.15.0"
+flate2 = "1.0.30"
+rpassword = "7.3.1"
+sha2 = "0.10.8"
+tar = "0.4.40"
+thiserror = "1.0.52"
