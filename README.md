@@ -6,6 +6,7 @@ jenc is a password-based **file encryption** tool.
 ## :hammer_and_wrench: Installation
 1. Install [Rust & Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html).
 2. Run `cargo build --release` to create the executable for your system.
+
 The executable will be in the `target/release` folder.
 
 ## :writing_hand: Usage
