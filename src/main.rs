@@ -4,7 +4,8 @@ mod file;
 
 use std::{
     env,
-    io::{stdin, stdout, Write}, path::PathBuf
+    io::{stdin, stdout, Write},
+    path::PathBuf
 };
 
 use crate::errors::{
