@@ -44,14 +44,17 @@ fn attempt_autodetect_action(param: &str) -> Result<String> {
     let path: PathBuf = PathBuf::from(param);
 
     if path.is_file() {
+        // file ends in .jenc: assume decrypting file
         if param.ends_with(".jenc") {
             println!("detected decrypt jenc...");
             return jenc_decrypt(&Some(&param.to_string()))
+        // file doesn't end in .jenc: assume encrypting
         } else {
             println!("detected encrypt file...");
             return jenc_encrypt(&Some(&param.to_string()))
         }
     }
+    // assume trying to .tar.gz -> encrypt a folder
     else if path.is_dir() {
         println!("detected encrypt folder...");
         return jenc_encrypt(&Some(&param.to_string()))

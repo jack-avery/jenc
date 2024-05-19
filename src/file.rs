@@ -3,6 +3,8 @@ use std::{
     path::PathBuf
 };
 
+use rand::{distributions::Alphanumeric, Rng};
+
 use flate2::{
     write::GzEncoder,
     read::GzDecoder,
@@ -39,7 +41,16 @@ pub fn encrypt(file: &str, pass: &str, cost: u8) -> Result<()> {
 
     // handle folders: create a .tar.gz
     } else {
-        let tar_gz: File = File::create("archive.tar.gz")?;
+        // use randomly generated tar name to (try to) avoid file conflicts
+        let _name: String = rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(6)
+            .map(char::from)
+            .collect();
+        let working_tar = format!("{}.tar.gz", _name);
+
+        // .tar.gz the folder
+        let tar_gz: File = File::create(&working_tar)?;
         let mut encoder: GzEncoder<File> = GzEncoder::new(tar_gz, Compression::default());
         {
             let mut archive: Builder<&mut GzEncoder<File>> = Builder::new(&mut encoder);
@@ -47,13 +58,13 @@ pub fn encrypt(file: &str, pass: &str, cost: u8) -> Result<()> {
         }
         encoder.finish()?;
 
-        // read original and encrypt
-        let raw: Vec<u8> = read("archive.tar.gz")?;
+        // read tar and encrypt
+        let raw: Vec<u8> = read(&working_tar)?;
         let enc: Vec<u8> = aes256_encrypt(&raw, pass, cost)?;
 
         // clean up
         remove_dir_all(&path)?;
-        remove_file("archive.tar.gz")?;
+        remove_file(&working_tar)?;
         
         // write to .jenc
         path.set_extension("tar.gz.jenc");
@@ -77,7 +88,7 @@ pub fn decrypt(file: &str, pass: &str) -> Result<()> {
     path.set_extension("");
     write(&path, dec.value)?;
 
-    // tarballed folders: unzip
+    // tarballed folders: also extract and inflate
     if let Some(ext) = path.extension() {
         let ext_str: &str = ext.to_str().unwrap();
         if ext_str == "gz" {
