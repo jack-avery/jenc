@@ -7,12 +7,12 @@ use aes_gcm_siv::{
 use bcrypt::HashParts;
 use sha2::{Digest, Sha256};
 
-use crate::errors::Result;
-
 struct AES256Key {
     pub cipher: Aes256GcmSiv,
     pub salt: [u8; 16],
 }
+
+use crate::error::JencError;
 
 pub struct CryptValue {
     pub value: Vec<u8>,
@@ -31,12 +31,16 @@ fn generate_salt() -> [u8; 16] {
     salt
 }
 
-fn get_aes256gcmsiv(pass: &str, cost: u8) -> Result<AES256Key> {
+fn get_aes256gcmsiv(pass: &str, cost: u8) -> Result<AES256Key, JencError> {
     let salt: [u8; 16] = generate_salt();
     get_aes256gcmsiv_with_salt(pass, salt, cost)
 }
 
-fn get_aes256gcmsiv_with_salt(pass: &str, salt: [u8; 16], cost: u8) -> Result<AES256Key> {
+fn get_aes256gcmsiv_with_salt(
+    pass: &str,
+    salt: [u8; 16],
+    cost: u8,
+) -> Result<AES256Key, JencError> {
     let bcrypt: HashParts = bcrypt::hash_with_salt(pass, cost as u32, salt)?;
     let mut hasher = Sha256::new();
     hasher.update(bcrypt.to_string());
@@ -46,7 +50,7 @@ fn get_aes256gcmsiv_with_salt(pass: &str, salt: [u8; 16], cost: u8) -> Result<AE
 }
 
 /// Returns the original bytes.
-pub fn aes256_decrypt(bytes: &[u8], pass: &str) -> Result<CryptValue> {
+pub fn aes256_decrypt(bytes: &[u8], pass: &str) -> Result<CryptValue, JencError> {
     let cost: u8 = bytes[0];
     let salt_u8: [u8; 16] = bytes[1..17].try_into().unwrap();
     let nonce_u8: [u8; 12] = bytes[17..29].try_into().unwrap();
@@ -58,7 +62,7 @@ pub fn aes256_decrypt(bytes: &[u8], pass: &str) -> Result<CryptValue> {
 }
 
 /// Turn a `Vec<u8>` into its' encrypted form using `pass`.
-pub fn aes256_encrypt(plaintext: &Vec<u8>, pass: &str, cost: u8) -> Result<Vec<u8>> {
+pub fn aes256_encrypt(plaintext: &Vec<u8>, pass: &str, cost: u8) -> Result<Vec<u8>, JencError> {
     let nonce_u8: [u8; 12] = generate_nonce();
     let nonce: &Nonce = &Nonce::from(nonce_u8);
     let key: AES256Key = get_aes256gcmsiv(pass, cost)?;

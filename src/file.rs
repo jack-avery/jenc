@@ -1,21 +1,17 @@
 use std::{
     fs::{read, remove_dir_all, remove_file, write, File},
-    path::PathBuf
+    path::PathBuf,
 };
 
 use rand::{distributions::Alphanumeric, Rng};
 
-use flate2::{
-    write::GzEncoder,
-    read::GzDecoder,
-    Compression
-};
+use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 use tar::{Archive, Builder};
 
 use crate::crypt::{aes256_decrypt, aes256_encrypt, CryptValue};
-use crate::errors::Result;
+use crate::error::JencError;
 
-pub fn encrypt(file: &str, pass: &str, cost: u8) -> Result<()> {
+pub fn encrypt(file: &str, pass: &str, cost: u8) -> Result<(), JencError> {
     let mut path: PathBuf = PathBuf::from(file);
 
     // handle files: encrypt directly
@@ -65,7 +61,7 @@ pub fn encrypt(file: &str, pass: &str, cost: u8) -> Result<()> {
         // clean up
         remove_dir_all(&path)?;
         remove_file(&working_tar)?;
-        
+
         // write to .jenc
         path.set_extension("tar.gz.jenc");
         write(&path, enc)?;
@@ -74,7 +70,7 @@ pub fn encrypt(file: &str, pass: &str, cost: u8) -> Result<()> {
     Ok(())
 }
 
-pub fn decrypt(file: &str, pass: &str) -> Result<()> {
+pub fn decrypt(file: &str, pass: &str) -> Result<(), JencError> {
     let mut path: PathBuf = PathBuf::from(file);
 
     // read and decrypt

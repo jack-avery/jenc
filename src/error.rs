@@ -1,7 +1,5 @@
 use thiserror::Error;
 
-pub type Result<T> = core::result::Result<T, JencError>;
-
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum JencError {
@@ -20,9 +18,4 @@ pub enum JencError {
     /// UTF8Decode failed
     #[error("utf8 decode failed: {0}")]
     UTF8Decode(#[from] std::string::FromUtf8Error),
-
-    // general
-    /// Missing parameter
-    #[error("missing parameter")]
-    NoParam,
 }
