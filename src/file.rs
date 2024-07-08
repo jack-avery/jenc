@@ -14,58 +14,42 @@ use crate::error::JencError;
 pub fn encrypt(file: &str, pass: &str, cost: u8) -> Result<(), JencError> {
     let mut path: PathBuf = PathBuf::from(file);
 
-    // handle files: encrypt directly
-    if path.is_file() {
-        // read original and encrypt
-        let raw: Vec<u8> = read(&path)?;
-        let enc: Vec<u8> = aes256_encrypt(&raw, pass, cost)?;
+    // use randomly generated tar name to (try to) avoid file conflicts
+    let _name: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(6)
+        .map(char::from)
+        .collect();
+    let working_tar = format!("{}.tar.gz", _name);
 
-        // clean up
-        remove_file(&path)?;
-
-        // write to .jenc
-        match path.extension() {
-            Some(ext_old) => {
-                let ext: String = format!("{}.jenc", ext_old.to_str().unwrap());
-                path.set_extension(ext);
-            }
-            None => {
-                path.set_extension("jenc");
-            }
-        }
-        write(&path, enc)?;
-
-    // handle folders: create a .tar.gz
-    } else {
-        // use randomly generated tar name to (try to) avoid file conflicts
-        let _name: String = rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(6)
-            .map(char::from)
-            .collect();
-        let working_tar = format!("{}.tar.gz", _name);
-
-        // .tar.gz the folder
-        let tar_gz: File = File::create(&working_tar)?;
-        let mut encoder: GzEncoder<File> = GzEncoder::new(tar_gz, Compression::default());
-        {
-            let mut archive: Builder<&mut GzEncoder<File>> = Builder::new(&mut encoder);
+    // .tar.gz the folder
+    let tar_gz: File = File::create(&working_tar)?;
+    let mut encoder: GzEncoder<File> = GzEncoder::new(tar_gz, Compression::default());
+    {
+        let mut archive: Builder<&mut GzEncoder<File>> = Builder::new(&mut encoder);
+        if path.is_file() {
+            archive.append_file(&path, &mut File::open(&path)?).unwrap();
+        } else {
             archive.append_dir_all(&path, &path).unwrap();
         }
-        encoder.finish()?;
-
-        // read tar and encrypt
-        let raw: Vec<u8> = read(&working_tar)?;
-        let enc: Vec<u8> = aes256_encrypt(&raw, pass, cost)?;
-
-        // clean up
-        remove_dir_all(&path)?;
-        remove_file(&working_tar)?;
-
-        // write to .jenc
-        path.set_extension("tar.gz.jenc");
-        write(&path, enc)?;
     }
+    encoder.finish()?;
+
+    // read tar and encrypt
+    let raw: Vec<u8> = read(&working_tar)?;
+    let enc: Vec<u8> = aes256_encrypt(&raw, pass, cost)?;
+
+    // clean up
+    if path.is_file() {
+        remove_file(&path)?; 
+    } else {
+        remove_dir_all(&path)?;
+    }   
+    remove_file(&working_tar)?;
+
+    // write to .jenc
+    path.set_extension("jenc");
+    write(&path, enc)?;
 
     Ok(())
 }
@@ -85,18 +69,13 @@ pub fn decrypt(file: &str, pass: &str) -> Result<(), JencError> {
     write(&path, dec.value)?;
 
     // tarballed folders: also extract and inflate
-    if let Some(ext) = path.extension() {
-        let ext_str: &str = ext.to_str().unwrap();
-        if ext_str == "gz" {
-            let tar_gz: File = File::open(&path)?;
-            let tar: GzDecoder<File> = GzDecoder::new(tar_gz);
-            let mut archive: Archive<GzDecoder<File>> = Archive::new(tar);
-            archive.unpack(".")?;
+    let tar_gz: File = File::open(&path)?;
+    let tar: GzDecoder<File> = GzDecoder::new(tar_gz);
+    let mut archive: Archive<GzDecoder<File>> = Archive::new(tar);
+    archive.unpack(".")?;
 
-            // clean up
-            remove_file(&path)?;
-        }
-    }
+    // clean up
+    remove_file(&path)?;
 
     Ok(())
 }

@@ -1,6 +1,6 @@
 [package]
 name = "jenc"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Jack Avery <jack.avery.business@gmail.com>"]
 edition = "2021"
 description = "file encryption tool"
