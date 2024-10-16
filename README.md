@@ -7,6 +7,10 @@ jenc is a password-based **file encryption** tool.
 1. Install [Rust & Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html).
 2. Run `cargo install --path .` to build and install the executable.
 
+For [NixOS](https://nixos.org) users, a simple Nix flake is provided:
+1. `nix build`
+2. `nix profile install .`
+
 ## :writing_hand: Usage
 ```
 Usage: jenc [OPTIONS] <FILE>
