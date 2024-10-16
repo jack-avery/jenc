@@ -82,7 +82,12 @@ fn get_mode(file: &str, encrypt_flag: &bool, decrypt_flag: &bool) -> JencMode {
     JencMode::Encrypt
 }
 
-fn jenc_encrypt(file: &str, pass: Option<String>, cost: Option<u8>, keep: &bool) -> Result<String, JencError> {
+fn jenc_encrypt(
+    file: &str,
+    pass: Option<String>,
+    cost: Option<u8>,
+    keep: &bool,
+) -> Result<String, JencError> {
     let password: String = match pass {
         Some(p) => p,
         None => get_password("password")?,

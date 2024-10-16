@@ -11,6 +11,8 @@ use tar::{Archive, Builder};
 use crate::crypt::{aes256_decrypt, aes256_encrypt, CryptValue};
 use crate::error::JencError;
 
+/// Generates a filename consisting of 6 random alphanumeric characters
+/// and the .tar.gz extension
 fn random_tar_name() -> String {
     let name: String = rand::thread_rng()
         .sample_iter(&Alphanumeric)
@@ -20,8 +22,13 @@ fn random_tar_name() -> String {
     format!("{}.tar.gz", name)
 }
 
-pub fn encrypt(file: &str, pass: &str, cost: u8, keep: &bool) -> Result<(), JencError> {
-    let in_path: PathBuf = PathBuf::from(file);
+/// Encrypt `path` using `pass` to a `.jenc` file,
+/// keeping the original file if `keep` is `true`.
+///
+/// Returns `()` if encryption completed successfully.
+/// Returns `JencError` if a step of the encryption failed.
+pub fn encrypt(path: &str, pass: &str, cost: u8, keep: &bool) -> Result<(), JencError> {
+    let in_path: PathBuf = PathBuf::from(path);
     let working_tar: String = random_tar_name();
 
     // .tar.gz the folder
@@ -30,7 +37,9 @@ pub fn encrypt(file: &str, pass: &str, cost: u8, keep: &bool) -> Result<(), Jenc
     {
         let mut archive: Builder<&mut GzEncoder<File>> = Builder::new(&mut encoder);
         if in_path.is_file() {
-            archive.append_file(&in_path, &mut File::open(&in_path)?).unwrap();
+            archive
+                .append_file(&in_path, &mut File::open(&in_path)?)
+                .unwrap();
         } else {
             archive.append_dir_all(&in_path, &in_path).unwrap();
         }
@@ -61,6 +70,11 @@ pub fn encrypt(file: &str, pass: &str, cost: u8, keep: &bool) -> Result<(), Jenc
     Ok(())
 }
 
+/// Decrypt `file` using `pass`,
+/// keeping the encrypted file if `keep` is `true`.
+///
+/// Returns `()` if decryption completed successfully.
+/// Returns `JencError` if a step of the decryption failed.
 pub fn decrypt(file: &str, pass: &str, keep: &bool) -> Result<(), JencError> {
     let in_path: PathBuf = PathBuf::from(file);
     let working_tar = random_tar_name();
