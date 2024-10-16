@@ -49,41 +49,39 @@ pub fn encrypt(file: &str, pass: &str, cost: u8, keep: &bool) -> Result<(), Jenc
     // clean up
     if !keep {
         if original_path.is_file() {
-            remove_file(&original_path)?; 
+            remove_file(&original_path)?;
         } else {
             remove_dir_all(&original_path)?;
         }
     }
-
-    remove_file(&working_tar)?;    
+    remove_file(&working_tar)?;
 
     Ok(())
 }
 
 pub fn decrypt(file: &str, pass: &str, keep: &bool) -> Result<(), JencError> {
-    let mut path: PathBuf = PathBuf::from(file);
+    let jenc_path: PathBuf = PathBuf::from(file);
 
     // read and decrypt
-    let raw: Vec<u8> = read(&path)?;
+    let raw: Vec<u8> = read(&jenc_path)?;
     let dec: CryptValue = aes256_decrypt(&raw, pass)?;
 
-    // clean up
-    remove_file(&path)?;
-
     // write to original
-    path.set_extension("");
-    write(&path, dec.value)?;
+    let mut working_tar: PathBuf = jenc_path.clone();
+    working_tar.set_extension("tar.gz");
+    write(&working_tar, dec.value)?;
 
     // tarballed folders: also extract and inflate
-    let tar_gz: File = File::open(&path)?;
+    let tar_gz: File = File::open(&working_tar)?;
     let tar: GzDecoder<File> = GzDecoder::new(tar_gz);
     let mut archive: Archive<GzDecoder<File>> = Archive::new(tar);
     archive.unpack(".")?;
 
     // clean up
     if !keep {
-        remove_file(&path)?;
+        remove_file(&jenc_path)?;
     }
+    remove_file(&working_tar)?;
 
     Ok(())
 }
