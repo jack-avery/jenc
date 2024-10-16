@@ -81,7 +81,7 @@ mod tests {
 
     #[test]
     fn test_encrypt_decrypt() {
-        let plaintext_bytes: Vec<u8> = PLAINTEXT.try_into().unwrap();
+        let plaintext_bytes: Vec<u8> = PLAINTEXT.into();
         let encrypted_bytes: Vec<u8> = aes256_encrypt(&plaintext_bytes, PASS, COST).unwrap();
         let decrypted_bytes: CryptValue = aes256_decrypt(&encrypted_bytes, PASS).unwrap();
         assert_eq!(decrypted_bytes.value, plaintext_bytes);
@@ -89,7 +89,7 @@ mod tests {
 
     #[test]
     fn test_decrypt_bad_pass() {
-        let plaintext_bytes: Vec<u8> = PLAINTEXT.try_into().unwrap();
+        let plaintext_bytes: Vec<u8> = PLAINTEXT.into();
         let encrypted_bytes: Vec<u8> = aes256_encrypt(&plaintext_bytes, PASS, COST).unwrap();
         assert!(aes256_decrypt(&encrypted_bytes, BAD_PASS).is_err());
     }

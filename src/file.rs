@@ -11,7 +11,7 @@ use tar::{Archive, Builder};
 use crate::crypt::{aes256_decrypt, aes256_encrypt, CryptValue};
 use crate::error::JencError;
 
-pub fn encrypt(file: &str, pass: &str, cost: u8) -> Result<(), JencError> {
+pub fn encrypt(file: &str, pass: &str, cost: u8, keep: &bool) -> Result<(), JencError> {
     let mut path: PathBuf = PathBuf::from(file);
 
     // use randomly generated tar name to (try to) avoid file conflicts
@@ -39,22 +39,28 @@ pub fn encrypt(file: &str, pass: &str, cost: u8) -> Result<(), JencError> {
     let raw: Vec<u8> = read(&working_tar)?;
     let enc: Vec<u8> = aes256_encrypt(&raw, pass, cost)?;
 
-    // clean up
-    if path.is_file() {
-        remove_file(&path)?; 
-    } else {
-        remove_dir_all(&path)?;
-    }   
-    remove_file(&working_tar)?;
+    // save original path
+    let original_path: PathBuf = path.clone();
 
     // write to .jenc
     path.set_extension("jenc");
     write(&path, enc)?;
 
+    // clean up
+    if !keep {
+        if original_path.is_file() {
+            remove_file(&original_path)?; 
+        } else {
+            remove_dir_all(&original_path)?;
+        }
+    }
+
+    remove_file(&working_tar)?;    
+
     Ok(())
 }
 
-pub fn decrypt(file: &str, pass: &str) -> Result<(), JencError> {
+pub fn decrypt(file: &str, pass: &str, keep: &bool) -> Result<(), JencError> {
     let mut path: PathBuf = PathBuf::from(file);
 
     // read and decrypt
@@ -75,7 +81,9 @@ pub fn decrypt(file: &str, pass: &str) -> Result<(), JencError> {
     archive.unpack(".")?;
 
     // clean up
-    remove_file(&path)?;
+    if !keep {
+        remove_file(&path)?;
+    }
 
     Ok(())
 }

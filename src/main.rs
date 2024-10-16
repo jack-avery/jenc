@@ -39,6 +39,14 @@ struct Args {
     )]
     decrypt: bool,
 
+    #[arg(
+        long,
+        short,
+        action,
+        help = "Do not delete original file/folder after action"
+    )]
+    keep: bool,
+
     file: String,
 }
 
@@ -54,8 +62,8 @@ fn bcrypt_cost_bounds(s: &str) -> Result<u8, String> {
 fn main() {
     let args: Args = Args::parse();
     match match get_mode(&args.file, &args.encrypt, &args.decrypt) {
-        JencMode::Encrypt => jenc_encrypt(&args.file, args.password, args.cost),
-        JencMode::Decrypt => jenc_decrypt(&args.file, args.password),
+        JencMode::Encrypt => jenc_encrypt(&args.file, args.password, args.cost, &args.keep),
+        JencMode::Decrypt => jenc_decrypt(&args.file, args.password, &args.keep),
     } {
         Ok(s) => println!("{}", s),
         Err(s) => eprintln!("{}", s),
@@ -74,7 +82,7 @@ fn get_mode(file: &str, encrypt_flag: &bool, decrypt_flag: &bool) -> JencMode {
     JencMode::Encrypt
 }
 
-fn jenc_encrypt(file: &str, pass: Option<String>, cost: Option<u8>) -> Result<String, JencError> {
+fn jenc_encrypt(file: &str, pass: Option<String>, cost: Option<u8>, keep: &bool) -> Result<String, JencError> {
     let password: String = match pass {
         Some(p) => p,
         None => get_password("password")?,
@@ -83,16 +91,16 @@ fn jenc_encrypt(file: &str, pass: Option<String>, cost: Option<u8>) -> Result<St
         Some(c) => c,
         None => get_cost()?,
     };
-    file::encrypt(file, &password, bcrypt_cost)?;
+    file::encrypt(file, &password, bcrypt_cost, keep)?;
     Ok("ok".to_string())
 }
 
-fn jenc_decrypt(file: &str, pass: Option<String>) -> Result<String, JencError> {
+fn jenc_decrypt(file: &str, pass: Option<String>, keep: &bool) -> Result<String, JencError> {
     let password: String = match pass {
         Some(p) => p,
         None => get_password("password")?,
     };
-    file::decrypt(file, &password)?;
+    file::decrypt(file, &password, keep)?;
     Ok("ok".to_string())
 }
 
