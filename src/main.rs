@@ -61,6 +61,12 @@ fn bcrypt_cost_bounds(s: &str) -> Result<u8, String> {
 
 fn main() {
     let args: Args = Args::parse();
+
+    if !std::path::Path::new(&args.file).exists() {
+        eprintln!("{}: file not found", &args.file);
+        return;
+    }
+
     match match get_mode(&args.file, &args.encrypt, &args.decrypt) {
         JencMode::Encrypt => jenc_encrypt(&args.file, args.password, args.cost, &args.keep),
         JencMode::Decrypt => jenc_decrypt(&args.file, args.password, &args.keep),
