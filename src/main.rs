@@ -4,7 +4,8 @@ mod file;
 
 use std::{
     io::{stdin, stdout, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
+    process::ExitCode
 };
 
 use crate::error::JencError;
@@ -59,20 +60,26 @@ fn bcrypt_cost_bounds(s: &str) -> Result<u8, String> {
     number_range(s, 5, 31)
 }
 
-fn main() {
+fn main() -> ExitCode {
     let args: Args = Args::parse();
 
     if !std::path::Path::new(&args.file).exists() {
         eprintln!("{}: file not found", &args.file);
-        return;
+        return ExitCode::from(1);
     }
 
     match match get_mode(&args.file, &args.encrypt, &args.decrypt) {
         JencMode::Encrypt => jenc_encrypt(&args.file, args.password, args.cost, &args.keep),
         JencMode::Decrypt => jenc_decrypt(&args.file, args.password, &args.keep),
     } {
-        Ok(s) => println!("{}", s),
-        Err(s) => eprintln!("{}", s),
+        Ok(s) => {
+            println!("{}", s);
+            return ExitCode::from(0);
+        },
+        Err(s) => {
+            eprintln!("{}", s);
+            return ExitCode::from(2);
+        },
     }
 }
 
